@@ -1,6 +1,5 @@
 namespace TowerDefense.Model;
 
-// Координаты в клетках
 public class GridPosition
 {
     public int Column { get; }

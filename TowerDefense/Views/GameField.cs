@@ -4,7 +4,7 @@ namespace TowerDefense.Views;
 
 public class GameField : Control
 {
-    private GameMap? map;
+    private GameState? game;
 
     public GameField()
     {
@@ -12,9 +12,9 @@ public class GameField : Control
         ResizeRedraw = true;
     }
 
-    public void DisplayMap(GameMap gameMap)
+    public void DisplayGame(GameState gameState)
     {
-        map = gameMap;
+        game = gameState;
         Invalidate();
     }
 
@@ -22,9 +22,10 @@ public class GameField : Control
     {
         base.OnPaint(e);
 
-        if (map == null)
+        if (game == null)
             return;
 
+        GameMap map = game.Map;
         int cellSize = Math.Min(ClientSize.Width / map.Width, ClientSize.Height / map.Height);
         if (cellSize < 1)
             return;
@@ -68,5 +69,32 @@ public class GameField : Control
                     e.Graphics.DrawString("Б", markerFont, Brushes.White, rectangle, textFormat);
             }
         }
+
+        DrawTower(e.Graphics, game.Tower, left, top, cellSize);
+        DrawEnemy(e.Graphics, game.Enemy, left, top, cellSize);
+    }
+
+    private void DrawTower(Graphics graphics, Tower tower, int left, int top, int cellSize)
+    {
+        float x = left + (tower.Position.Column + 0.5F) * cellSize;
+        float y = top + (tower.Position.Row + 0.5F) * cellSize;
+        float size = cellSize * 0.65F;
+        using var towerBrush = new SolidBrush(Color.FromArgb(44, 78, 135));
+        using var barrelPen = new Pen(Color.FromArgb(28, 46, 76), cellSize * 0.12F);
+
+        graphics.FillRectangle(towerBrush, x - size / 2, y - size / 2, size, size);
+        graphics.DrawLine(barrelPen, x, y, x - cellSize * 0.45F, y);
+    }
+
+    private void DrawEnemy(Graphics graphics, Enemy enemy, int left, int top, int cellSize)
+    {
+        float x = left + ((float)enemy.Column + 0.5F) * cellSize;
+        float y = top + ((float)enemy.Row + 0.5F) * cellSize;
+        float size = cellSize * 0.55F;
+        using var enemyBrush = new SolidBrush(Color.FromArgb(205, 49, 50));
+        using var outlinePen = new Pen(Color.FromArgb(100, 30, 30), 2);
+
+        graphics.FillEllipse(enemyBrush, x - size / 2, y - size / 2, size, size);
+        graphics.DrawEllipse(outlinePen, x - size / 2, y - size / 2, size, size);
     }
 }

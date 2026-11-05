@@ -8,6 +8,7 @@ partial class MainForm
     private GameField gameField = null!;
     private Label legendLabel = null!;
     private Label hintLabel = null!;
+    private System.Windows.Forms.Timer updateTimer = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -21,6 +22,8 @@ partial class MainForm
 
     private void InitializeComponent()
     {
+        components = new System.ComponentModel.Container();
+        updateTimer = new System.Windows.Forms.Timer(components);
         titleLabel = new Label();
         subtitleLabel = new Label();
         gameField = new GameField();
@@ -35,7 +38,7 @@ partial class MainForm
         // subtitleLabel
         subtitleLabel.AutoSize = true;
         subtitleLabel.Location = new Point(24, 60);
-        subtitleLabel.Text = "Неделя 1 · Игровое поле · 12 × 8 клеток";
+        subtitleLabel.Text = "Неделя 2 · Прототип башни и движение врага";
         // gameField
         gameField.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gameField.Location = new Point(24, 96);
@@ -51,7 +54,10 @@ partial class MainForm
         hintLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         hintLabel.AutoSize = true;
         hintLabel.Location = new Point(24, 536);
-        hintLabel.Text = "Светлая дорога задаёт маршрут от входа к базе.\nВраги и башни появятся на следующем этапе.";
+        hintLabel.Text = "Красный круг — враг, синяя башня неподвижна.";
+        // updateTimer
+        updateTimer.Interval = 20;
+        updateTimer.Tick += OnUpdateTimerTick;
         // MainForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
@@ -65,7 +71,7 @@ partial class MainForm
         MinimumSize = new Size(640, 631);
         Name = "MainForm";
         StartPosition = FormStartPosition.CenterScreen;
-        Text = "Tower Defense — неделя 1";
+        Text = "Tower Defense — неделя 2";
         ResumeLayout(false);
         PerformLayout();
     }
