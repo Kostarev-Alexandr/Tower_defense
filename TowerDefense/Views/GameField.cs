@@ -2,9 +2,12 @@ using TowerDefense.Model;
 
 namespace TowerDefense.Views;
 
+// Рисует игровой мир и переводит щелчок мыши из пикселей в координаты клетки.
 public class GameField : Control
 {
     private GameState? game;
+
+    public event EventHandler<CellClickedEventArgs>? CellClicked;
 
     public GameField()
     {
@@ -18,6 +21,35 @@ public class GameField : Control
         Invalidate();
     }
 
+    // Отрисовка и обработка мыши используют одинаковые границы карты.
+    private Rectangle GetMapBounds()
+    {
+        if (game == null)
+            return Rectangle.Empty;
+
+        int cellSize = Math.Min(ClientSize.Width / game.Map.Width, ClientSize.Height / game.Map.Height);
+        int width = game.Map.Width * cellSize;
+        int height = game.Map.Height * cellSize;
+        return new Rectangle((ClientSize.Width - width) / 2, (ClientSize.Height - height) / 2, width, height);
+    }
+
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        base.OnMouseClick(e);
+
+        if (game == null || e.Button != MouseButtons.Left)
+            return;
+
+        Rectangle bounds = GetMapBounds();
+        if (!bounds.Contains(e.Location))
+            return;
+
+        int cellSize = bounds.Width / game.Map.Width;
+        int column = (e.X - bounds.Left) / cellSize;
+        int row = (e.Y - bounds.Top) / cellSize;
+        CellClicked?.Invoke(this, new CellClickedEventArgs(column, row));
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
@@ -26,12 +58,13 @@ public class GameField : Control
             return;
 
         GameMap map = game.Map;
-        int cellSize = Math.Min(ClientSize.Width / map.Width, ClientSize.Height / map.Height);
+        Rectangle bounds = GetMapBounds();
+        int cellSize = bounds.Width / map.Width;
         if (cellSize < 1)
             return;
 
-        int left = (ClientSize.Width - map.Width * cellSize) / 2;
-        int top = (ClientSize.Height - map.Height * cellSize) / 2;
+        int left = bounds.Left;
+        int top = bounds.Top;
 
         using var grassBrush = new SolidBrush(Color.FromArgb(126, 166, 102));
         using var roadBrush = new SolidBrush(Color.FromArgb(222, 202, 153));
@@ -70,7 +103,8 @@ public class GameField : Control
             }
         }
 
-        DrawTower(e.Graphics, game.Tower, left, top, cellSize);
+        foreach (Tower tower in game.Towers)
+            DrawTower(e.Graphics, tower, left, top, cellSize);
         DrawEnemy(e.Graphics, game.Enemy, left, top, cellSize);
     }
 

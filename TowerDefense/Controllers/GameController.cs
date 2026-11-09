@@ -19,6 +19,14 @@ public class GameController
         View.DisplayGame(game);
         View.Shown += OnViewShown;
         View.UpdateRequested += OnUpdateRequested;
+        View.CellClicked += OnCellClicked;
+    }
+
+    private void OnCellClicked(object? sender, CellClickedEventArgs e)
+    {
+        BuildResult result = game.BuildTower(e.Column, e.Row);
+        View.ShowBuildResult(result);
+        View.RefreshGame();
     }
 
     private void OnViewShown(object? sender, EventArgs e)
