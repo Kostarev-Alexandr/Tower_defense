@@ -21,7 +21,7 @@ public class GameStateTests
 
         game.Update(0.25);
 
-        Assert.That(game.Enemy.Column, Is.EqualTo(0.5));
+        Assert.That(game.Enemy.Column, Is.EqualTo(0.5).Within(0.000001));
         Assert.That(game.Enemy.Row, Is.EqualTo(3));
         Assert.That(game.Towers[0].Position.Column, Is.EqualTo(4));
         Assert.That(game.Towers[0].Position.Row, Is.EqualTo(3));

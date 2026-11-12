@@ -25,6 +25,9 @@ public class GameController
     private void OnCellClicked(object? sender, CellClickedEventArgs e)
     {
         BuildResult result = game.BuildTower(e.Column, e.Row);
+        if (result == BuildResult.Success || result == BuildResult.Occupied)
+            View.SelectTower(game.GetTowerAt(e.Column, e.Row));
+
         View.ShowBuildResult(result);
         View.RefreshGame();
     }
@@ -42,7 +45,7 @@ public class GameController
         game.Update(seconds);
         View.RefreshGame();
 
-        if (game.Enemy.HasReachedBase)
+        if (game.IsEncounterFinished && game.Shots.Count == 0)
         {
             View.StopUpdates();
             clock.Stop();

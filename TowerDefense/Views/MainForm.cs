@@ -33,15 +33,23 @@ public partial class MainForm : Form
         updateTimer.Stop();
     }
 
+    public void SelectTower(Tower? tower)
+    {
+        gameField.SelectTower(tower);
+    }
+
     public void RefreshGame()
     {
         if (game == null)
             return;
 
-        moneyLabel.Text = $"Деньги: {game.Money}     Стоимость башни: {GameState.TowerCost}";
-        hintLabel.Text = game.Enemy.HasReachedBase
-            ? "Враг достиг базы и остановился. Строительство доступно.\nДля повторного прохода закройте окно и запустите проект снова."
-            : "Красный круг — враг. Синие башни стоят рядом с дорогой.\nВраг движется от входа к базе со скоростью 2 клетки в секунду.";
+        moneyLabel.Text = $"База: {game.BaseHealth}/{GameState.MaxBaseHealth}     Монеты: {game.Money}     Цена башни: {GameState.TowerCost}";
+        if (game.Enemy.IsDefeated)
+            hintLabel.Text = $"Враг уничтожен. Награда — {Enemy.Reward} монет.\nДля повтора запустите игру заново.";
+        else if (game.Enemy.HasReachedBase)
+            hintLabel.Text = $"Враг прорвался. База потеряла {Enemy.BaseDamage} здоровья.\nДля повтора запустите игру заново.";
+        else
+            hintLabel.Text = "Башни автоматически стреляют, когда враг входит в радиус.";
         gameField.Invalidate();
     }
 
@@ -60,7 +68,7 @@ public partial class MainForm : Form
                 buildStatusLabel.Text = "На дороге, входе врагов и базе строить нельзя.";
                 break;
             case BuildResult.Occupied:
-                buildStatusLabel.Text = "В этой клетке уже стоит башня.";
+                buildStatusLabel.Text = $"Башня выбрана. Урон {Tower.Damage}, радиус {Tower.AttackRange:0.#} кл.";
                 break;
             case BuildResult.NotEnoughMoney:
                 buildStatusLabel.Text = "Недостаточно денег для строительства башни.";

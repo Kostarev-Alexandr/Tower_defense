@@ -42,11 +42,13 @@ partial class MainForm
         // subtitleLabel
         subtitleLabel.AutoSize = true;
         subtitleLabel.Location = new Point(24, 60);
-        subtitleLabel.Text = "ЛКМ — построить башню на свободной зелёной клетке";
+        subtitleLabel.Text = "ЛКМ — построить на траве или выбрать башню";
         // moneyLabel
         moneyLabel.AutoSize = true;
+        moneyLabel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        moneyLabel.ForeColor = Color.FromArgb(35, 80, 89);
         moneyLabel.Location = new Point(24, 86);
-        moneyLabel.Text = "Деньги: 150     Стоимость башни: 50";
+        moneyLabel.Text = "База: 100/100     Монеты: 150     Цена башни: 50";
         // gameField
         gameField.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         gameField.Location = new Point(24, 120);
@@ -57,14 +59,13 @@ partial class MainForm
         legendLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         legendLabel.AutoSize = true;
         legendLabel.Location = new Point(24, 520);
-        legendLabel.Text = "В — вход врагов     Б — база     Зелёные клетки — места для башен";
+        legendLabel.Text = "В — вход врага     Б — база     Пунктир — радиус атаки башен";
         // hintLabel
-        hintLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         hintLabel.AutoSize = false;
         hintLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         hintLabel.Location = new Point(24, 552);
         hintLabel.Size = new Size(576, 40);
-        hintLabel.Text = "Красный круг — враг. Синие башни стоят рядом с дорогой.";
+        hintLabel.Text = "Башни автоматически стреляют, когда враг входит в радиус.";
         // buildStatusLabel
         buildStatusLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         buildStatusLabel.Location = new Point(24, 600);
@@ -76,7 +77,8 @@ partial class MainForm
         // MainForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        BackColor = Color.FromArgb(244, 246, 240);
+        BackColor = Color.FromArgb(240, 246, 242);
+        ForeColor = Color.FromArgb(30, 54, 49);
         ClientSize = new Size(624, 652);
         Controls.Add(titleLabel);
         Controls.Add(subtitleLabel);
