@@ -17,8 +17,7 @@ public class BuildingTests
         Assert.That(game.Towers[0].Position.Column, Is.EqualTo(4));
         Assert.That(game.Towers[0].Position.Row, Is.EqualTo(3));
         Assert.That(game.Money, Is.EqualTo(100));
-        Assert.That(game.Enemy.Column, Is.EqualTo(0));
-        Assert.That(game.Enemy.Row, Is.EqualTo(3));
+        Assert.That(game.Enemies, Is.Empty);
     }
 
     [TestCase(-1, 0)]
@@ -88,13 +87,14 @@ public class BuildingTests
     public void BuildTower_AfterArrivalStillWorks()
     {
         var game = new GameState();
+        game.StartNextWave();
         game.Update(8.5);
 
         BuildResult result = game.BuildTower(4, 3);
 
         Assert.That(result, Is.EqualTo(BuildResult.Success));
         Assert.That(game.Money, Is.EqualTo(100));
-        Assert.That(game.Enemy.HasReachedBase, Is.True);
+        Assert.That(game.EnemiesEscaped, Is.EqualTo(1));
     }
 
     [Test]

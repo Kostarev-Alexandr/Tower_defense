@@ -14,7 +14,7 @@ public class GameField : Control
 
     public GameField()
     {
-        BackColor = Color.FromArgb(220, 232, 222);
+        BackColor = Color.FromArgb(215, 226, 218);
         DoubleBuffered = true;
         ResizeRedraw = true;
     }
@@ -22,6 +22,8 @@ public class GameField : Control
     public void DisplayGame(GameState gameState)
     {
         game = gameState;
+        selectedTower = null;
+        hoveredCell = null;
         Invalidate();
     }
 
@@ -108,12 +110,12 @@ public class GameField : Control
         int left = bounds.Left;
         int top = bounds.Top;
 
-        using var grassLight = new SolidBrush(Color.FromArgb(161, 195, 145));
-        using var grassDark = new SolidBrush(Color.FromArgb(150, 186, 135));
-        using var roadBrush = new SolidBrush(Color.FromArgb(224, 205, 167));
+        using var grassLight = new SolidBrush(Color.FromArgb(159, 182, 153));
+        using var grassDark = new SolidBrush(Color.FromArgb(151, 175, 145));
+        using var roadBrush = new SolidBrush(Color.FromArgb(225, 212, 184));
         using var spawnBrush = new SolidBrush(Color.FromArgb(129, 71, 64));
         using var baseBrush = new SolidBrush(Color.FromArgb(47, 99, 111));
-        using var gridPen = new Pen(Color.FromArgb(45, 46, 77, 59));
+        using var gridPen = new Pen(Color.FromArgb(28, 46, 77, 59));
         using var markerFont = new Font("Segoe UI", cellSize / 3F, FontStyle.Bold, GraphicsUnit.Pixel);
         using var textFormat = new StringFormat
         {
@@ -140,9 +142,9 @@ public class GameField : Control
                 e.Graphics.DrawRectangle(gridPen, rectangle.X, rectangle.Y, cellSize - 1, cellSize - 1);
 
                 if (cellType == CellType.Spawn)
-                    e.Graphics.DrawString("В", markerFont, Brushes.White, rectangle, textFormat);
+                    e.Graphics.DrawString("→", markerFont, Brushes.White, rectangle, textFormat);
                 else if (cellType == CellType.Base)
-                    e.Graphics.DrawString("Б", markerFont, Brushes.White, rectangle, textFormat);
+                    DrawBase(e.Graphics, rectangle);
             }
         }
 
@@ -152,7 +154,7 @@ public class GameField : Control
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
         PointF? previewCenter = null;
-        if (hoveredCell is Point cell &&
+        if (!game.IsGameOver && hoveredCell is Point cell &&
             map.IsBuildableCell(cell.X, cell.Y) &&
             game.GetTowerAt(cell.X, cell.Y) == null)
         {
@@ -176,8 +178,8 @@ public class GameField : Control
         if (previewCenter is PointF preview)
             DrawTower(e.Graphics, preview, cellSize, selected: false, opacity: 115);
 
-        if (!game.IsEncounterFinished)
-            DrawEnemy(e.Graphics, game.Enemy, left, top, cellSize);
+        foreach (Enemy enemy in game.Enemies)
+            DrawEnemy(e.Graphics, enemy, left, top, cellSize);
 
         using var shotPen = new Pen(Color.FromArgb(255, 244, 168), Math.Max(2F, cellSize * 0.06F));
         foreach (Shot shot in game.Shots)
@@ -197,11 +199,23 @@ public class GameField : Control
         return new PointF(left + ((float)column + 0.5F) * cellSize, top + ((float)row + 0.5F) * cellSize);
     }
 
+    private static void DrawBase(Graphics graphics, Rectangle cell)
+    {
+        float unit = cell.Width / 10F;
+        float x = cell.Left + unit * 2;
+        float y = cell.Top + unit * 2;
+        graphics.FillRectangle(Brushes.WhiteSmoke, x, y + unit, unit * 6, unit * 5);
+        graphics.FillRectangle(Brushes.WhiteSmoke, x, y, unit * 1.5F, unit * 2);
+        graphics.FillRectangle(Brushes.WhiteSmoke, x + unit * 4.5F, y, unit * 1.5F, unit * 2);
+        using var doorBrush = new SolidBrush(Color.FromArgb(47, 99, 111));
+        graphics.FillRectangle(doorBrush, x + unit * 2, y + unit * 4, unit * 2, unit * 2);
+    }
+
     private static void DrawRange(Graphics graphics, PointF center, int cellSize, bool isPreview = false)
     {
         float radius = (float)Tower.AttackRange * cellSize;
-        using var fill = new SolidBrush(Color.FromArgb(isPreview ? 7 : 14, 36, 115, 155));
-        using var outline = new Pen(Color.FromArgb(isPreview ? 85 : 175, 41, 100, 134), 1.5F)
+        using var fill = new SolidBrush(Color.FromArgb(isPreview ? 4 : 8, 36, 115, 155));
+        using var outline = new Pen(Color.FromArgb(isPreview ? 75 : 150, 41, 100, 134), 1.5F)
         {
             DashStyle = DashStyle.Dash
         };
@@ -244,7 +258,7 @@ public class GameField : Control
         float barHeight = Math.Max(3F, cellSize * 0.09F);
         float barX = center.X - barWidth / 2;
         float barY = center.Y - size / 2 - barHeight - 3F;
-        float healthFraction = enemy.Health / (float)Enemy.MaxHealth;
+        float healthFraction = enemy.Health / (float)enemy.MaxHealth;
         graphics.FillRectangle(barBackground, barX, barY, barWidth, barHeight);
         graphics.FillRectangle(healthBrush, barX, barY, barWidth * healthFraction, barHeight);
     }

@@ -9,6 +9,8 @@ public partial class MainForm : Form
 
     public event EventHandler? UpdateRequested;
     public event EventHandler<CellClickedEventArgs>? CellClicked;
+    public event EventHandler? NextWaveRequested;
+    public event EventHandler? RestartRequested;
 
     public MainForm()
     {
@@ -20,17 +22,13 @@ public partial class MainForm : Form
     {
         game = gameState;
         gameField.DisplayGame(gameState);
+        buildStatusLabel.Text = "";
         RefreshGame();
     }
 
     public void StartUpdates()
     {
         updateTimer.Start();
-    }
-
-    public void StopUpdates()
-    {
-        updateTimer.Stop();
     }
 
     public void SelectTower(Tower? tower)
@@ -43,35 +41,80 @@ public partial class MainForm : Form
         if (game == null)
             return;
 
-        moneyLabel.Text = $"База: {game.BaseHealth}/{GameState.MaxBaseHealth}     Монеты: {game.Money}     Цена башни: {GameState.TowerCost}";
-        if (game.Enemy.IsDefeated)
-            hintLabel.Text = $"Враг уничтожен. Награда — {Enemy.Reward} монет.\nДля повтора запустите игру заново.";
-        else if (game.Enemy.HasReachedBase)
-            hintLabel.Text = $"Враг прорвался. База потеряла {Enemy.BaseDamage} здоровья.\nДля повтора запустите игру заново.";
-        else
-            hintLabel.Text = "Башни автоматически стреляют, когда враг входит в радиус.";
+        baseValueLabel.Text = $"{game.BaseHealth} / {GameState.MaxBaseHealth}";
+        healthFill.Width = healthTrack.Width * game.BaseHealth / GameState.MaxBaseHealth;
+        healthFill.BackColor = game.BaseHealth <= 25
+            ? Color.FromArgb(177, 74, 62)
+            : Color.FromArgb(47, 117, 94);
+        moneyValueLabel.Text = game.Money.ToString();
+        waveLabel.Text = $"{game.WaveNumber} / {GameState.TotalWaves}";
+        remainingLabel.Text = game.EnemiesRemaining.ToString();
+        enemyHealthLabel.Text = $"{game.WaveEnemyHealth} здоровья";
+        priceValueLabel.Text = $"{GameState.TowerCost} монет";
+        priceValueLabel.ForeColor = game.Money >= GameState.TowerCost
+            ? Color.FromArgb(166, 117, 39)
+            : Color.FromArgb(125, 134, 140);
+        towerStatsLabel.Text = $"Урон {Tower.Damage} · Радиус {Tower.AttackRange:0.#}";
+        summaryLabel.Text = $"Башни {game.Towers.Count}      Уничтожено {game.EnemiesDefeated}      Прорвалось {game.EnemiesEscaped}";
+        nextWaveButton.Enabled = game.Phase == GamePhase.Preparing;
+        nextWaveButton.BackColor = nextWaveButton.Enabled
+            ? Color.FromArgb(47, 117, 94)
+            : Color.FromArgb(232, 238, 240);
+        nextWaveButton.Text = game.WaveNumber == 0 ? "Начать волну" : "Следующая волна";
+        phaseLabel.Text = "Подготовка";
+        if (game.Phase == GamePhase.WaveRunning)
+        {
+            phaseLabel.Text = "Атака";
+            nextWaveButton.Text = "Идёт волна";
+        }
+        else if (game.WaveNumber > 0 && !game.IsGameOver)
+        {
+            phaseLabel.Text = "Волна завершена";
+        }
+
+        resultPanel.Visible = game.IsGameOver;
+        if (game.IsGameOver)
+        {
+            bool victory = game.Phase == GamePhase.Victory;
+            phaseLabel.Text = victory ? "База защищена" : "База потеряна";
+            resultTitleLabel.Text = victory ? "Победа!" : "Поражение";
+            resultTitleLabel.ForeColor = victory ? Color.FromArgb(36, 111, 78) : Color.FromArgb(161, 64, 55);
+            resultDetailsLabel.Text = $"Уничтожено {game.EnemiesDefeated}    ·    Прорвалось {game.EnemiesEscaped}\nЗдоровье базы {game.BaseHealth} / {GameState.MaxBaseHealth}";
+            nextWaveButton.Text = "Партия завершена";
+            resultPanel.Location = new Point(
+                gameField.Left + (gameField.Width - resultPanel.Width) / 2,
+                gameField.Top + (gameField.Height - resultPanel.Height) / 2);
+            resultPanel.BringToFront();
+        }
+
         gameField.Invalidate();
     }
 
     public void ShowBuildResult(BuildResult result)
     {
         // Модель возвращает причину, а представление выбирает текст сообщения.
+        buildStatusLabel.ForeColor = result == BuildResult.Success || result == BuildResult.Occupied
+            ? Color.FromArgb(47, 117, 94)
+            : Color.FromArgb(177, 74, 62);
         switch (result)
         {
             case BuildResult.Success:
-                buildStatusLabel.Text = "Башня построена.";
+                buildStatusLabel.Text = $"Башня построена · −{GameState.TowerCost} монет";
                 break;
             case BuildResult.OutsideMap:
-                buildStatusLabel.Text = "Строить можно только внутри поля.";
+                buildStatusLabel.Text = "Клетка за пределами поля";
                 break;
             case BuildResult.InvalidTerrain:
-                buildStatusLabel.Text = "На дороге, входе врагов и базе строить нельзя.";
+                buildStatusLabel.Text = "Клетка недоступна для строительства";
                 break;
             case BuildResult.Occupied:
-                buildStatusLabel.Text = $"Башня выбрана. Урон {Tower.Damage}, радиус {Tower.AttackRange:0.#} кл.";
+                buildStatusLabel.Text = "Башня выбрана";
                 break;
             case BuildResult.NotEnoughMoney:
-                buildStatusLabel.Text = "Недостаточно денег для строительства башни.";
+                buildStatusLabel.Text = "Недостаточно монет";
+                break;
+            case BuildResult.GameOver:
+                buildStatusLabel.Text = "Партия завершена";
                 break;
         }
     }
@@ -84,5 +127,15 @@ public partial class MainForm : Form
     private void OnUpdateTimerTick(object? sender, EventArgs e)
     {
         UpdateRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnNextWaveClick(object? sender, EventArgs e)
+    {
+        NextWaveRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnRestartClick(object? sender, EventArgs e)
+    {
+        RestartRequested?.Invoke(this, EventArgs.Empty);
     }
 }

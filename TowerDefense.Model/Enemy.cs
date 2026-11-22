@@ -3,7 +3,6 @@ namespace TowerDefense.Model;
 // Хранит положение врага и перемещает его по маршруту в координатах клеток.
 public class Enemy
 {
-    public const int MaxHealth = 60;
     public const int Reward = 25;
     public const int BaseDamage = 25;
 
@@ -13,12 +12,18 @@ public class Enemy
     public double Column { get; private set; }
     public double Row { get; private set; }
     public double Speed { get; } = 2;
-    public int Health { get; private set; } = MaxHealth;
+    public int MaxHealth { get; }
+    public int Health { get; private set; }
     public bool IsDefeated => Health == 0;
     public bool HasReachedBase => distanceTravelled >= route.Count - 1;
 
-    public Enemy(GameMap map)
+    public Enemy(GameMap map, int maxHealth = 60)
     {
+        if (maxHealth <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxHealth));
+
+        MaxHealth = maxHealth;
+        Health = maxHealth;
         route = map.Route;
         Column = map.Spawn.Column;
         Row = map.Spawn.Row;

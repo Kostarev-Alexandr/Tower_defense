@@ -20,6 +20,24 @@ public class GameController
         View.Shown += OnViewShown;
         View.UpdateRequested += OnUpdateRequested;
         View.CellClicked += OnCellClicked;
+        View.NextWaveRequested += OnNextWaveRequested;
+        View.RestartRequested += OnRestartRequested;
+    }
+
+    private void OnNextWaveRequested(object? sender, EventArgs e)
+    {
+        if (game.StartNextWave())
+        {
+            clock.Restart();
+            View.RefreshGame();
+        }
+    }
+
+    private void OnRestartRequested(object? sender, EventArgs e)
+    {
+        game.Restart();
+        clock.Restart();
+        View.DisplayGame(game);
     }
 
     private void OnCellClicked(object? sender, CellClickedEventArgs e)
@@ -45,10 +63,5 @@ public class GameController
         game.Update(seconds);
         View.RefreshGame();
 
-        if (game.IsEncounterFinished && game.Shots.Count == 0)
-        {
-            View.StopUpdates();
-            clock.Stop();
-        }
     }
 }

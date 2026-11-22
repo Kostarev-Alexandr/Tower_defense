@@ -18,23 +18,26 @@ public class GameStateTests
     {
         var game = new GameState();
         game.BuildTower(4, 3);
+        game.StartNextWave();
 
         game.Update(0.25);
 
-        Assert.That(game.Enemy.Column, Is.EqualTo(0.5).Within(0.000001));
-        Assert.That(game.Enemy.Row, Is.EqualTo(3));
+        Assert.That(game.Enemies[0].Column, Is.EqualTo(0.5).Within(0.000001));
+        Assert.That(game.Enemies[0].Row, Is.EqualTo(3));
         Assert.That(game.Towers[0].Position.Column, Is.EqualTo(4));
         Assert.That(game.Towers[0].Position.Row, Is.EqualTo(3));
         Assert.That(game.Money, Is.EqualTo(100));
     }
 
     [Test]
-    public void Update_ReportsArrivalAtBase()
+    public void Update_RemovesArrivedEnemyAndDamagesBase()
     {
         var game = new GameState();
+        game.StartNextWave();
 
         game.Update(8.5);
 
-        Assert.That(game.Enemy.HasReachedBase, Is.True);
+        Assert.That(game.EnemiesEscaped, Is.EqualTo(1));
+        Assert.That(game.BaseHealth, Is.EqualTo(75));
     }
 }

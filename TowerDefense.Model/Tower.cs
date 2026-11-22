@@ -16,18 +16,31 @@ public class Tower
         Position = position;
     }
 
-    internal bool TryAttack(Enemy enemy, double seconds)
+    internal void ResetCooldown()
+    {
+        cooldown = 0;
+    }
+
+    // Враги хранятся в порядке появления, поэтому первой выбирается передняя цель.
+    internal Enemy? Attack(IReadOnlyList<Enemy> enemies, double seconds)
     {
         cooldown = Math.Max(0, cooldown - seconds);
-        double columnDistance = enemy.Column - Position.Column;
-        double rowDistance = enemy.Row - Position.Row;
-        double distanceSquared = columnDistance * columnDistance + rowDistance * rowDistance;
+        if (cooldown > 1e-9)
+            return null;
 
-        if (cooldown > 1e-9 || distanceSquared > AttackRange * AttackRange)
-            return false;
+        foreach (Enemy enemy in enemies)
+        {
+            double columnDistance = enemy.Column - Position.Column;
+            double rowDistance = enemy.Row - Position.Row;
+            double distanceSquared = columnDistance * columnDistance + rowDistance * rowDistance;
+            if (distanceSquared > AttackRange * AttackRange)
+                continue;
 
-        enemy.TakeDamage(Damage);
-        cooldown = ShotInterval;
-        return true;
+            enemy.TakeDamage(Damage);
+            cooldown = ShotInterval;
+            return enemy;
+        }
+
+        return null;
     }
 }

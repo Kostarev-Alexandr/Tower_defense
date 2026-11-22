@@ -6,28 +6,43 @@ public class GameState
     public const int StartingMoney = 150;
     public const int TowerCost = 50;
     public const int MaxBaseHealth = 100;
+    public const int TotalWaves = 5;
+    public const double SpawnInterval = 0.9;
 
     private readonly List<Tower> towers = new List<Tower>();
     private readonly List<Shot> shots = new List<Shot>();
+    private readonly List<Enemy> enemies = new List<Enemy>();
+    private static readonly int[] waveHealth = { 60, 100, 160, 220, 300 };
+    private int enemiesToSpawn;
+    private double spawnTimer;
 
     public GameMap Map { get; }
-    public Enemy Enemy { get; }
+    public IReadOnlyList<Enemy> Enemies { get; }
     public IReadOnlyList<Tower> Towers { get; }
     public IReadOnlyList<Shot> Shots { get; }
     public int Money { get; private set; } = StartingMoney;
     public int BaseHealth { get; private set; } = MaxBaseHealth;
-    public bool IsEncounterFinished => Enemy.IsDefeated || Enemy.HasReachedBase;
+    public GamePhase Phase { get; private set; } = GamePhase.Preparing;
+    public int WaveNumber { get; private set; }
+    public int WaveEnemyHealth => waveHealth[Math.Max(0, WaveNumber - 1)];
+    public int EnemiesRemaining => enemies.Count + enemiesToSpawn;
+    public int EnemiesDefeated { get; private set; }
+    public int EnemiesEscaped { get; private set; }
+    public bool IsGameOver => Phase == GamePhase.Victory || Phase == GamePhase.Defeat;
 
     public GameState()
     {
         Map = new GameMap();
-        Enemy = new Enemy(Map);
+        Enemies = enemies.AsReadOnly();
         Towers = towers.AsReadOnly();
         Shots = shots.AsReadOnly();
     }
 
     public BuildResult BuildTower(int column, int row)
     {
+        if (IsGameOver)
+            return BuildResult.GameOver;
+
         if (!Map.IsInside(column, row))
             return BuildResult.OutsideMap;
 
@@ -63,34 +78,94 @@ public class GameState
             throw new ArgumentOutOfRangeException(nameof(seconds));
 
         // Короткие шаги позволяют башням заметить врага даже после задержки таймера.
-        while (seconds > 0 && !IsEncounterFinished)
+        while (seconds > 0 && Phase == GamePhase.WaveRunning)
         {
             double step = Math.Min(seconds, 0.05);
             seconds -= step;
             AdvanceShots(step);
-            Enemy.Move(step);
+            UpdateWave(step);
+        }
 
-            if (Enemy.HasReachedBase)
+        AdvanceShots(seconds);
+    }
+
+    public bool StartNextWave()
+    {
+        if (Phase != GamePhase.Preparing)
+            return false;
+
+        WaveNumber++;
+        enemiesToSpawn = WaveNumber + 2;
+        spawnTimer = 0;
+        Phase = GamePhase.WaveRunning;
+        foreach (Tower tower in towers)
+            tower.ResetCooldown();
+        return true;
+    }
+
+    public void Restart()
+    {
+        towers.Clear();
+        enemies.Clear();
+        shots.Clear();
+        enemiesToSpawn = 0;
+        spawnTimer = 0;
+        WaveNumber = 0;
+        EnemiesDefeated = 0;
+        EnemiesEscaped = 0;
+        Money = StartingMoney;
+        BaseHealth = MaxBaseHealth;
+        Phase = GamePhase.Preparing;
+    }
+
+    private void UpdateWave(double seconds)
+    {
+        spawnTimer -= seconds;
+        if (enemiesToSpawn > 0 && spawnTimer <= 1e-9)
+        {
+            enemies.Add(new Enemy(Map, WaveEnemyHealth));
+            enemiesToSpawn--;
+            spawnTimer += SpawnInterval;
+        }
+
+        // Прорвавшиеся враги сразу удаляются, чтобы урон не повторялся.
+        for (int i = enemies.Count - 1; i >= 0; i--)
+        {
+            Enemy enemy = enemies[i];
+            enemy.Move(seconds);
+            if (enemy.HasReachedBase)
             {
                 BaseHealth = Math.Max(0, BaseHealth - Enemy.BaseDamage);
-                break;
-            }
-
-            foreach (Tower tower in towers)
-            {
-                if (!tower.TryAttack(Enemy, step))
-                    continue;
-
-                shots.Add(new Shot(tower.Position, Enemy));
-                if (Enemy.IsDefeated)
+                EnemiesEscaped++;
+                enemies.RemoveAt(i);
+                if (BaseHealth == 0)
                 {
-                    Money += Enemy.Reward;
-                    break;
+                    Phase = GamePhase.Defeat;
+                    enemiesToSpawn = 0;
+                    enemies.Clear();
+                    shots.Clear();
+                    return;
                 }
             }
         }
 
-        AdvanceShots(seconds);
+        foreach (Tower tower in towers)
+        {
+            Enemy? target = tower.Attack(enemies, seconds);
+            if (target == null)
+                continue;
+
+            shots.Add(new Shot(tower.Position, target));
+            if (target.IsDefeated)
+            {
+                Money += Enemy.Reward;
+                EnemiesDefeated++;
+                enemies.Remove(target);
+            }
+        }
+
+        if (EnemiesRemaining == 0)
+            Phase = WaveNumber == TotalWaves ? GamePhase.Victory : GamePhase.Preparing;
     }
 
     private void AdvanceShots(double seconds)

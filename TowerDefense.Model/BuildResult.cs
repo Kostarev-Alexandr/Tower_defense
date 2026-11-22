@@ -7,5 +7,6 @@ public enum BuildResult
     OutsideMap,
     InvalidTerrain,
     Occupied,
-    NotEnoughMoney
+    NotEnoughMoney,
+    GameOver
 }
